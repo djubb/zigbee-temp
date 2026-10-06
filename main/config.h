@@ -29,7 +29,7 @@
 #define DS18B20_ENDPOINTS { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 }
 
 // How often each sensor's temperature is read and reported over Zigbee.
-#define REPORT_INTERVAL_MS (60 * 1000)
+#define REPORT_INTERVAL_MS (20 * 1000)
 
 // Sanity bounds for reported values - DS18B20's full rated range.
 #define TEMP_MIN -40
