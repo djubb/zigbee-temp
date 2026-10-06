@@ -110,7 +110,7 @@ void ds18b20_task(void *pvParameters)
                     ESP_LOGI(TAG, "Sensor[%d] (endpoint %d): %.2f C", i, endpoints[i], temperature);
                     if (temperature >= TEMP_MIN && temperature <= TEMP_MAX) {
                         int16_t zb_temperature = (int16_t)lroundf(temperature * 100.0f);
-                        reportAttribute(endpoints[i], ESP_ZB_ZCL_CLUSTER_ID_TEMP_MEASUREMENT, ESP_ZB_ZCL_ATTR_TEMP_MEASUREMENT_VALUE_ID, &zb_temperature, 2);
+                        reportAttribute(endpoints[i], ESP_ZB_ZCL_CLUSTER_ID_TEMP_MEASUREMENT, ESP_ZB_ZCL_ATTR_TEMP_MEASUREMENT_VALUE_ID, &zb_temperature);
                     } else {
                         ESP_LOGW(TAG, "Sensor[%d]: implausible value %.2f C, not reporting", i, temperature);
                     }

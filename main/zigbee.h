@@ -32,4 +32,4 @@
     }
 
 
-void reportAttribute(uint8_t endpoint, uint16_t clusterID, uint16_t attributeID, void *value, uint8_t value_length);
+void reportAttribute(uint8_t endpoint, uint16_t clusterID, uint16_t attributeID, void *value);
