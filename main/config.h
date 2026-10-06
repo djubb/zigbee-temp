@@ -16,10 +16,17 @@
 // power all the time.
 #define ONE_WIRE_GPIO GPIO_NUM_20
 
-#define MAX_DS18B20 3
+// Headroom for sensors added later without touching the Zigbee device's
+// cluster list again (which would otherwise need idf.py erase-flash + a
+// ZHA re-pair). Endpoints beyond however many DS18B20s are actually wired
+// just sit at their default value and never report.
+#define MAX_DS18B20 10
 // Zigbee endpoint assigned to each DS18B20, in order of ascending 1-Wire ROM
-// address (stable across reboots as long as the same 3 sensors stay wired).
-#define DS18B20_ENDPOINTS { 10, 11, 12 }
+// address. Stable across reboots only while the set of wired sensors stays
+// the same - adding/removing one reshuffles this ordering for everyone
+// whose address sorts after the change, since the bus is rescanned from
+// scratch on every boot.
+#define DS18B20_ENDPOINTS { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 }
 
 // How often each sensor's temperature is read and reported over Zigbee.
 #define REPORT_INTERVAL_MS (60 * 1000)
