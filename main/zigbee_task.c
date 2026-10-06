@@ -102,29 +102,6 @@ static void create_sensor_endpoint(esp_zb_ep_list_t *ep_list, uint8_t endpoint, 
     esp_zb_ep_list_add_ep(ep_list, esp_zb_cluster_list, endpoint_config);
 }
 
-// Configure the stack's own reporting engine for the Temperature Measurement
-// attribute, instead of sending Report Attribute commands by hand on every
-// read - the stack reports whenever the value changes by `delta` or at
-// worst every `max_interval` seconds, same cadence as REPORT_INTERVAL_MS.
-static void configure_reporting(uint8_t endpoint)
-{
-    esp_zb_zcl_reporting_info_t reporting_info = {
-        .direction = ESP_ZB_ZCL_CMD_DIRECTION_TO_SRV,
-        .ep = endpoint,
-        .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_TEMP_MEASUREMENT,
-        .cluster_role = ESP_ZB_ZCL_CLUSTER_SERVER_ROLE,
-        .dst.profile_id = ESP_ZB_AF_HA_PROFILE_ID,
-        .u.send_info.min_interval = 1,
-        .u.send_info.max_interval = REPORT_INTERVAL_MS / 1000,
-        .u.send_info.def_min_interval = 1,
-        .u.send_info.def_max_interval = REPORT_INTERVAL_MS / 1000,
-        .u.send_info.delta.u16 = 10, // 0.1 C
-        .attr_id = ESP_ZB_ZCL_ATTR_TEMP_MEASUREMENT_VALUE_ID,
-        .manuf_code = ESP_ZB_ZCL_ATTR_NON_MANUFACTURER_SPECIFIC,
-    };
-    esp_zb_zcl_update_reporting_info(&reporting_info);
-}
-
 /* initialize Zigbee stack with Zigbee router config */
 void esp_zb_task(void *pvParameters)
 {
@@ -141,10 +118,6 @@ void esp_zb_task(void *pvParameters)
     esp_zb_device_register(esp_zb_ep_list);
     esp_zb_core_action_handler_register(zb_action_handler);
     esp_zb_set_primary_network_channel_set(ESP_ZB_PRIMARY_CHANNEL_MASK);
-
-    for (uint8_t i = 0; i < MAX_DS18B20; i++) {
-        configure_reporting(endpoints[i]);
-    }
 
     ESP_ERROR_CHECK(esp_zb_start(false));
     esp_zb_stack_main_loop();
