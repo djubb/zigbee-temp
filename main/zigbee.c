@@ -28,6 +28,10 @@ void reportAttribute(uint8_t endpoint, uint16_t clusterID, uint16_t attributeID,
             },
             .address_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
             .clusterID = clusterID,
+            // Must be the explicit "not manufacturer-specific" sentinel
+            // (0xFFFF), not 0 - a zeroed manuf_code is what triggers the
+            // ZBOSS assertion in zcl_general_commands.c:612.
+            .manuf_code = ESP_ZB_ZCL_ATTR_NON_MANUFACTURER_SPECIFIC,
             .attributeID = attributeID,
         };
         esp_err_t err = esp_zb_zcl_report_attr_cmd_req(&cmd);
