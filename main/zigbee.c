@@ -4,14 +4,16 @@
 
 static const char *TAG = "zigbee";
 
-// Updates the attribute's stored value and immediately unicasts an explicit
-// Report Attributes command straight to the coordinator (0x0000). This is
-// deliberate rather than relying on the stack's passive reporting engine
-// (esp_zb_zcl_update_reporting_info): the min/max interval we configure
-// there is only a *default* - ZHA's own Configure Reporting command sent
-// during device interview can (and in practice does) override it with a
-// much longer interval, so the only way to guarantee our own cadence is to
-// push the report ourselves every cycle.
+// Updates the attribute's stored value and lets the stack's own reporting
+// engine (configured once via esp_zb_zcl_update_reporting_info in
+// zigbee_task.c) decide when to actually transmit a Report Attributes
+// frame. Calling esp_zb_zcl_report_attr_cmd_req() explicitly on every read
+// instead reliably crashed with a ZBOSS assertion in
+// zcl_general_commands.c:612 on this esp-zigbee-lib version, regardless of
+// reporting-table setup or the manuf_code field - so actual report cadence
+// is whatever ZHA negotiates (its own Configure Reporting during pairing
+// can override our configured default), not guaranteed to match
+// REPORT_INTERVAL_MS exactly.
 void reportAttribute(uint8_t endpoint, uint16_t clusterID, uint16_t attributeID, void *value)
 {
     // The Zigbee stack runs in its own task - any call into esp-zigbee-lib
@@ -19,27 +21,8 @@ void reportAttribute(uint8_t endpoint, uint16_t clusterID, uint16_t attributeID,
     // esp_zb_lock_acquire/release.
     esp_zb_lock_acquire(portMAX_DELAY);
     esp_zb_zcl_status_t status = esp_zb_zcl_set_attribute_val(endpoint, clusterID, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE, attributeID, value, false);
-    if (status == ESP_ZB_ZCL_STATUS_SUCCESS) {
-        esp_zb_zcl_report_attr_cmd_t cmd = {
-            .zcl_basic_cmd = {
-                .dst_addr_u.addr_short = 0x0000,
-                .dst_endpoint = endpoint,
-                .src_endpoint = endpoint,
-            },
-            .address_mode = ESP_ZB_APS_ADDR_MODE_16_ENDP_PRESENT,
-            .clusterID = clusterID,
-            // Must be the explicit "not manufacturer-specific" sentinel
-            // (0xFFFF), not 0 - a zeroed manuf_code is what triggers the
-            // ZBOSS assertion in zcl_general_commands.c:612.
-            .manuf_code = ESP_ZB_ZCL_ATTR_NON_MANUFACTURER_SPECIFIC,
-            .attributeID = attributeID,
-        };
-        esp_err_t err = esp_zb_zcl_report_attr_cmd_req(&cmd);
-        if (err != ESP_OK) {
-            ESP_LOGW(TAG, "report_attr_cmd_req cluster=0x%04x attr=0x%04x: %s", clusterID, attributeID, esp_err_to_name(err));
-        }
-    } else {
+    esp_zb_lock_release();
+    if (status != ESP_ZB_ZCL_STATUS_SUCCESS) {
         ESP_LOGW(TAG, "set_attribute_val cluster=0x%04x attr=0x%04x: status 0x%02x", clusterID, attributeID, status);
     }
-    esp_zb_lock_release();
 }
